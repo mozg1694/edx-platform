@@ -350,10 +350,10 @@ LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/signin'
 LOGIN_URL = EDX_ROOT_URL + '/signin'
 
 # use the ratelimit backend to prevent brute force attacks
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
     'rules.permissions.ObjectPermissionBackend',
     'ratelimitbackend.backends.RateLimitModelBackend',
-)
+]
 
 LMS_BASE = None
 LMS_ROOT_URL = "http://localhost:8000"
@@ -389,7 +389,7 @@ simplefilter('ignore')
 
 ################################# Middleware ###################################
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'crum.CurrentRequestUserMiddleware',
     'request_cache.middleware.RequestCache',
 
@@ -447,7 +447,7 @@ MIDDLEWARE_CLASSES = (
 
     # This must be last so that it runs first in the process_response chain
     'openedx.core.djangoapps.site_configuration.middleware.SessionCookieDomainOverrideMiddleware',
-)
+]
 
 # Clickjacking protection can be enabled by setting this to 'DENY'
 X_FRAME_OPTIONS = 'ALLOW'
@@ -554,7 +554,7 @@ EMAIL_HOST_PASSWORD = ''
 DEFAULT_FROM_EMAIL = 'registration@example.com'
 DEFAULT_FEEDBACK_EMAIL = 'feedback@example.com'
 SERVER_EMAIL = 'devops@example.com'
-ADMINS = ()
+ADMINS = []
 MANAGERS = ADMINS
 
 EDX_PLATFORM_REVISION = os.environ.get('EDX_PLATFORM_REVISION')
@@ -1203,7 +1203,7 @@ for app_name, insert_before in OPTIONAL_APPS:
     try:
         INSTALLED_APPS.insert(INSTALLED_APPS.index(insert_before), app_name)
     except (IndexError, ValueError):
-        INSTALLED_APPS += (app_name,)
+        INSTALLED_APPS.append(app_name)
 
 
 ### ADVANCED_SECURITY_CONFIG

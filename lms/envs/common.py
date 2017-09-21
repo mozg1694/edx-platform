@@ -586,9 +586,7 @@ DEFAULT_TEMPLATE_ENGINE = TEMPLATES[0]
 ###############################################################################################
 
 # use the ratelimit backend to prevent brute force attacks
-AUTHENTICATION_BACKENDS = (
-    'ratelimitbackend.backends.RateLimitModelBackend',
-)
+AUTHENTICATION_BACKENDS = ['ratelimitbackend.backends.RateLimitModelBackend']
 STUDENT_FILEUPLOAD_MAX_SIZE = 4 * 1000 * 1000  # 4 MB
 MAX_FILEUPLOADS_PER_INPUT = 20
 
@@ -905,7 +903,7 @@ LANGUAGES_BIDI = ("he", "ar", "fa", "ur", "fa-ir", "rtl")
 LANGUAGE_COOKIE = "openedx-language-preference"
 
 # Sourced from http://www.localeplanet.com/icu/ and wikipedia
-LANGUAGES = (
+LANGUAGES = [
     ('en', u'English'),
     ('rtl', u'Right-to-Left Test Language'),
     ('eo', u'Dummy Language (Esperanto)'),  # Dummy languaged used for testing
@@ -987,7 +985,7 @@ LANGUAGES = (
     ('zh-cn', u'中文 (简体)'),  # Chinese (China)
     ('zh-hk', u'中文 (香港)'),  # Chinese (Hong Kong)
     ('zh-tw', u'中文 (台灣)'),  # Chinese (Taiwan)
-)
+]
 
 LANGUAGE_DICT = dict(LANGUAGES)
 
@@ -1152,7 +1150,7 @@ simplefilter('ignore')
 
 ################################# Middleware ###################################
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'crum.CurrentRequestUserMiddleware',
 
     'request_cache.middleware.RequestCache',
@@ -1237,7 +1235,7 @@ MIDDLEWARE_CLASSES = (
 
     # This must be last
     'openedx.core.djangoapps.site_configuration.middleware.SessionCookieDomainOverrideMiddleware',
-)
+]
 
 # Clickjacking protection can be enabled by setting this to 'DENY'
 X_FRAME_OPTIONS = 'ALLOW'
@@ -2440,7 +2438,7 @@ DISABLE_ACCOUNT_ACTIVATION_REQUIREMENT_SWITCH = "verify_student_disable_account_
 ### This enables the Metrics tab for the Instructor dashboard ###########
 FEATURES['CLASS_DASHBOARD'] = False
 if FEATURES.get('CLASS_DASHBOARD'):
-    INSTALLED_APPS += ('class_dashboard',)
+    INSTALLED_APPS.append('class_dashboard')
 
 ################ Enable credit eligibility feature ####################
 ENABLE_CREDIT_ELIGIBILITY = True
@@ -2450,12 +2448,12 @@ FEATURES['ENABLE_CREDIT_ELIGIBILITY'] = ENABLE_CREDIT_ELIGIBILITY
 
 if FEATURES.get('AUTH_USE_CAS'):
     CAS_SERVER_URL = 'https://provide_your_cas_url_here'
-    AUTHENTICATION_BACKENDS = (
+    AUTHENTICATION_BACKENDS = [
         'django.contrib.auth.backends.ModelBackend',
         'django_cas.backends.CASBackend',
-    )
-    INSTALLED_APPS += ('django_cas',)
-    MIDDLEWARE_CLASSES += ('django_cas.middleware.CASMiddleware',)
+    ]
+    INSTALLED_APPS.append('django_cas')
+    MIDDLEWARE_CLASSES.append('django_cas.middleware.CASMiddleware')
 
 ############# Cross-domain requests #################
 
@@ -2594,7 +2592,7 @@ VIDEO_IMAGE_SETTINGS = dict(
 # http://loc.gov/standards/iso639-2/ISO-639-2_utf-8.txt according to http://en.wikipedia.org/wiki/ISO_639-1
 # Note that this is used as the set of choices to the `code` field of the
 # `LanguageProficiency` model.
-ALL_LANGUAGES = (
+ALL_LANGUAGES = [
     [u"aa", u"Afar"],
     [u"ab", u"Abkhazian"],
     [u"af", u"Afrikaans"],
@@ -2781,13 +2779,13 @@ ALL_LANGUAGES = (
     [u"yo", u"Yoruba"],
     [u"za", u"Zhuang"],
     [u"zu", u"Zulu"]
-)
+]
 
 
 ### Apps only installed in some instances
 # The order of INSTALLED_APPS matters, so this tuple is the app name and the item in INSTALLED_APPS
 # that this app should be inserted *before*. A None here means it should be appended to the list.
-OPTIONAL_APPS = (
+OPTIONAL_APPS = [
     ('mentoring', None),
     ('problem_builder', 'openedx.core.djangoapps.content.course_overviews'),
     ('edx_sga', None),
@@ -2817,7 +2815,7 @@ OPTIONAL_APPS = (
 
     # Required by the Enterprise App
     ('django_object_actions', None),  # https://github.com/crccheck/django-object-actions
-)
+]
 
 for app_name, insert_before in OPTIONAL_APPS:
     # First attempt to only find the module rather than actually importing it,
@@ -2834,7 +2832,7 @@ for app_name, insert_before in OPTIONAL_APPS:
     try:
         INSTALLED_APPS.insert(INSTALLED_APPS.index(insert_before), app_name)
     except (IndexError, ValueError):
-        INSTALLED_APPS += (app_name,)
+        INSTALLED_APPS.append(app_name)
 
 ### ADVANCED_SECURITY_CONFIG
 # Empty by default
