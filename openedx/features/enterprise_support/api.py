@@ -6,6 +6,7 @@ from functools import wraps
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
@@ -16,6 +17,7 @@ from slumber.exceptions import HttpClientError, HttpNotFoundError, HttpServerErr
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.token_utils import JwtBuilder
+from openedx.features.enterprise_support.utils import get_cache_key
 from third_party_auth.pipeline import get as get_partial_pipeline
 from third_party_auth.provider import Registry
 
@@ -358,10 +360,23 @@ def enterprise_customer_for_request(request):
         # If we were able to obtain an EnterpriseCustomer UUID, go ahead
         # and use it to attempt to retrieve EnterpriseCustomer details
         # from the EnterpriseCustomer API.
+        enterprise_api_client = EnterpriseApiServiceClient()
+        enterprise_api_client_username = settings.ENTERPRISE_SERVICE_WORKER_USERNAME
+        if request.user.is_authenticated():
+            enterprise_api_client = EnterpriseApiClient(user=request.user)
+            enterprise_api_client_username = request.user.username
+
+        cache_key = get_cache_key(
+            site_domain=request.site.domain,
+            resource='get_enterprise_customer',
+            username=enterprise_api_client_username,
+        )
+        enterprise_customer = cache.get(cache_key)
+        if enterprise_customer:
+            return enterprise_customer
         try:
-            enterprise_customer = EnterpriseApiClient(user=request.user).get_enterprise_customer(
-                enterprise_customer_uuid
-            )
+            enterprise_customer = enterprise_api_client.get_enterprise_customer(enterprise_customer_uuid)
+            cache.set(cache_key, enterprise_customer, settings.ENTERPRISE_API_CACHE_TIMEOUT)
         except HttpNotFoundError:
             enterprise_customer = None
 
