@@ -2,10 +2,10 @@
 
 <%!
 from django.utils.translation import ugettext as _
-from django.utils.html import escape
 %>
 
 <%inherit file="../main.html"/>
+<%namespace file='../main.html' import="login_query"/>
 
 <%block name="title">
     <title>
@@ -35,7 +35,7 @@ from django.utils.html import escape
 
         <div class="row">
             <div class="col-sm-12">
-                <a class="btn btn-secondary help-button">${_("Visit edX Help")}</a>
+                <a href="https://support.edx.org/" class="btn btn-secondary help-button">${_("Visit edX Help")}</a>
             </div>
         </div>
         <!--logged out users-->
@@ -50,7 +50,7 @@ from django.utils.html import escape
             <!-- Sign-in button brings user to sign-in page. After signing in, user is brough to logged in state of contact form.-->
             <div class="row">
                 <div class="col-sm-12">
-                    <button class="btn btn-primary btn-signin">${_("Sign in")}</button>
+                    <a href="/login${login_query()}" class="btn btn-primary btn-signin">${_("Sign in")}</a>
                 </div>
             </div>
 
