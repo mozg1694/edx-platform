@@ -263,7 +263,26 @@ class EnterpriseApiServiceClient(EnterpriseServiceClientMixin, EnterpriseApiClie
     """
     Class for producing an Enterprise service API client with service user.
     """
-    pass
+
+    def get_enterprise_customer(self, uuid, cache_response='True'):
+        """
+        Fetch enterprise customer with enterprise service user and cache API
+        response depending on parameter `cache_response`.
+        """
+        cache_key = get_cache_key(
+            resource='enterprise-customer',
+            username=settings.ENTERPRISE_SERVICE_WORKER_USERNAME,
+        )
+        enterprise_customer = cache.get(cache_key)
+        if enterprise_customer:
+            return enterprise_customer
+
+        endpoint = getattr(self.client, 'enterprise-customer')
+        enterprise_customer = endpoint(uuid).get()
+        if cache_response and enterprise_customer:
+            cache.set(cache_key, enterprise_customer, settings.ENTERPRISE_API_CACHE_TIMEOUT)
+
+        return enterprise_customer
 
 
 def data_sharing_consent_required(view_func):
@@ -361,22 +380,11 @@ def enterprise_customer_for_request(request):
         # and use it to attempt to retrieve EnterpriseCustomer details
         # from the EnterpriseCustomer API.
         enterprise_api_client = EnterpriseApiServiceClient()
-        enterprise_api_client_username = settings.ENTERPRISE_SERVICE_WORKER_USERNAME
         if request.user.is_authenticated():
             enterprise_api_client = EnterpriseApiClient(user=request.user)
-            enterprise_api_client_username = request.user.username
 
-        cache_key = get_cache_key(
-            site_domain=request.site.domain,
-            resource='get_enterprise_customer',
-            username=enterprise_api_client_username,
-        )
-        enterprise_customer = cache.get(cache_key)
-        if enterprise_customer:
-            return enterprise_customer
         try:
             enterprise_customer = enterprise_api_client.get_enterprise_customer(enterprise_customer_uuid)
-            cache.set(cache_key, enterprise_customer, settings.ENTERPRISE_API_CACHE_TIMEOUT)
         except HttpNotFoundError:
             enterprise_customer = None
 

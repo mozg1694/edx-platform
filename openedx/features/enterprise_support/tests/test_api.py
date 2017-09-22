@@ -9,11 +9,12 @@ import httpretty
 import mock
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.test import TestCase
 from django.test.utils import override_settings
 
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from openedx.features.enterprise_support.api import (
     ConsentApiClient,
     ConsentApiServiceClient,
@@ -25,8 +26,8 @@ from openedx.features.enterprise_support.api import (
     get_dashboard_consent_notification,
     get_enterprise_consent_url,
 )
-
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
+from openedx.features.enterprise_support.utils import get_cache_key
 from student.tests.factories import UserFactory
 
 
@@ -42,10 +43,12 @@ class MockEnrollment(mock.MagicMock):
 @ddt.ddt
 @override_settings(ENABLE_ENTERPRISE_INTEGRATION=True)
 @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
-class TestEnterpriseApi(EnterpriseServiceMockMixin, TestCase):
+class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
     """
     Test enterprise support APIs.
     """
+    ENABLED_CACHES = ['default']
+
     @classmethod
     def setUpTestData(cls):
         cls.user = UserFactory.create(
@@ -85,6 +88,42 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, TestCase):
         # pylint: disable=protected-access
         self.assertEqual(enterprise_api_service_client.client._store['session'].auth.token, 'test-token')
 
+    def _assert_get_enterprise_customer(self, api_client):
+        """
+        DRY method to verify caching for get enterprise customer method.
+        """
+        dummy_enterprise_api_data = {'name': 'dummy-enterprise-customer', 'uuid': 'enterprise-uuid'}
+        cache_key = get_cache_key(
+            resource='enterprise-customer',
+            username=settings.ENTERPRISE_SERVICE_WORKER_USERNAME,
+        )
+        self.mock_get_enterprise_customer('enterprise-uuid', dummy_enterprise_api_data, 200)
+
+        self._assert_get_enterprise_customer_with_disabled_cache(api_client, dummy_enterprise_api_data, cache_key)
+        self._assert_get_enterprise_customer_with_cache(api_client, dummy_enterprise_api_data, cache_key)
+
+    def _assert_get_enterprise_customer_with_disabled_cache(self, api_client, enterprise_customer_data, cache_key):
+        """
+        DRY method to verify that get enterprise customer response is not cached.
+        """
+        cached_enterprise_customer = cache.get(cache_key)
+        self.assertIsNone(cached_enterprise_customer)
+        enterprise_customer = api_client.get_enterprise_customer(enterprise_customer_data['uuid'], cache_response=False)
+        self.assertEqual(enterprise_customer_data, enterprise_customer)
+        self.assertIsNone(cached_enterprise_customer)
+
+    def _assert_get_enterprise_customer_with_cache(self, api_client, enterprise_customer_data, cache_key):
+        """
+        DRY method to verify that get enterprise customer response is cached.
+        """
+        cached_enterprise_customer = cache.get(cache_key)
+        self.assertIsNone(cached_enterprise_customer)
+
+        enterprise_customer = api_client.get_enterprise_customer(enterprise_customer_data['uuid'])
+        self.assertEqual(enterprise_customer_data, enterprise_customer)
+        cached_enterprise_customer = cache.get(cache_key)
+        self.assertEqual(cached_enterprise_customer, enterprise_customer)
+
     @httpretty.activate
     @mock.patch('openedx.features.enterprise_support.api.JwtBuilder')
     def test_enterprise_api_client_with_service_user(self, mock_jwt_builder):
@@ -93,6 +132,11 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, TestCase):
         by default to authenticate and access enterprise API.
         """
         self._assert_api_service_client(EnterpriseApiServiceClient, mock_jwt_builder)
+
+        # Now verify that enterprise customer data is cached properly for
+        # the enterprise api client.
+        enterprise_api_client = EnterpriseApiServiceClient()
+        self._assert_get_enterprise_customer(enterprise_api_client)
 
     @httpretty.activate
     @mock.patch('openedx.features.enterprise_support.api.JwtBuilder')
