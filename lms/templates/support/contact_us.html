@@ -9,7 +9,7 @@ from django.utils.translation import ugettext as _
 
 <%block name="title">
     <title>
-        Contact US
+        ${_("Contact US")}
     </title>
 </%block>
 
@@ -81,7 +81,7 @@ from django.utils.translation import ugettext as _
 
             <div class="row">
                 <div class="col-sm-12">
-                    <p>${_("What can we help you with, iananderson21?")}</p>
+                    <p>${_("What can we help you with, {username}?").format(username=user.username)}</p>
                 </div>
             </div>
             <br>
@@ -91,9 +91,9 @@ from django.utils.translation import ugettext as _
                     <div class="form-group">
                         <label class="label-course" for="course">${_("Course Name")}</label>
                         <select class="form-control select-course" id="course">
-                            <option>The Science of Happiness</option>
-                            <option>Video Game Design: Teamwork and Collaboration</option>
-                            <option>Not course-specific</option>
+                            % for enrollment in user_enrollments:
+                                <option value="${enrollment.course.id}">${enrollment.course.display_name}</option>
+                            % endfor
                         </select>
                     </div>
                 </div>
