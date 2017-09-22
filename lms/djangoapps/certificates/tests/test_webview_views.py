@@ -951,13 +951,8 @@ class CertificatesViewsTests(CommonCertificatesTestCase):
         match org and mode.
         This test should check template matching when org={org}, course=Null, mode={mode}.
         """
-<<<<<<< HEAD
         mock_get_course_run_details.return_value = {'content_language': 'en'}
         course = CourseFactory.create(
-=======
-        mock_get_course_run_details.return_value = {'language': 'en'}
-        othercourse = CourseFactory.create(
->>>>>>> 85280e8e23... Changed lookup logic to consider language learner-1995
             org='cstX', number='cst_22', display_name='custom template course'
         )
 

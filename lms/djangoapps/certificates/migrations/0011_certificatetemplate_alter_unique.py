@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 
-def make_unique(apps, schema_editor):
+def revert_alter_unique(apps, schema_editor):
     CertificateTemplateModel = apps.get_model("certificates", "CertificateTemplate")
 
     # get all unique sets of (org_id, course_key, and mode)
@@ -34,5 +34,5 @@ class Migration(migrations.Migration):
             name='certificatetemplate',
             unique_together=set([('organization_id', 'course_key', 'mode', 'language')]),
         ),
-        migrations.RunPython(RunPython.noop, reverse_code=revertAlterUnique)
+        migrations.RunPython(RunPython.noop, reverse_code=revert_alter_unique)
     ]
