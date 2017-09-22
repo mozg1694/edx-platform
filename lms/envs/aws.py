@@ -673,16 +673,17 @@ X_FRAME_OPTIONS = ENV_TOKENS.get('X_FRAME_OPTIONS', X_FRAME_OPTIONS)
 
 ##### Third-party auth options ################################################
 if FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
-    AUTHENTICATION_BACKENDS = [
-        ENV_TOKENS.get('THIRD_PARTY_AUTH_BACKENDS', [
-            'social_core.backends.google.GoogleOAuth2',
-            'social_core.backends.linkedin.LinkedinOAuth2',
-            'social_core.backends.facebook.FacebookOAuth2',
-            'social_core.backends.azuread.AzureADOAuth2',
-            'third_party_auth.saml.SAMLAuthBackend',
-            'third_party_auth.lti.LTIAuthBackend',
-        ]) + list(AUTHENTICATION_BACKENDS)
-    ]
+    tmp_backends = ENV_TOKENS.get('THIRD_PARTY_AUTH_BACKENDS', [
+        'social_core.backends.google.GoogleOAuth2',
+        'social_core.backends.linkedin.LinkedinOAuth2',
+        'social_core.backends.facebook.FacebookOAuth2',
+        'social_core.backends.azuread.AzureADOAuth2',
+        'third_party_auth.saml.SAMLAuthBackend',
+        'third_party_auth.lti.LTIAuthBackend',
+    ])
+
+    AUTHENTICATION_BACKENDS = list(tmp_backends) + list(AUTHENTICATION_BACKENDS)
+    del tmp_backends
 
     # The reduced session expiry time during the third party login pipeline. (Value in seconds)
     SOCIAL_AUTH_PIPELINE_TIMEOUT = ENV_TOKENS.get('SOCIAL_AUTH_PIPELINE_TIMEOUT', 600)
