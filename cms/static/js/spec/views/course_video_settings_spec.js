@@ -9,14 +9,21 @@ define(
                 renderCourseVideoSettingsView,
                 destroyCourseVideoSettingsView,
                 verifyPreferanceErrorState,
+                resetProvider,
+                changeProvider,
                 transcriptPreferencesUrl = '/transcript_preferences/course-v1:edX+DemoX+Demo_Course',
                 activeTranscriptPreferences = {
                     provider: 'Cielo24',
                     cielo24_fidelity: 'PROFESSIONAL',
                     cielo24_turnaround: 'PRIORITY',
                     three_play_turnaround: '',
+                    video_source_language: '',
                     preferred_languages: ['fr', 'en'],
                     modified: '2017-08-27T12:28:17.421260Z'
+                },
+                transcriptOrganizationCredentials = {
+                    Cielo24: true,
+                    '3PlayMedia': true
                 },
                 transcriptionPlans = {
                     '3PlayMedia': {
@@ -66,13 +73,17 @@ define(
                     }
                 };
 
-            renderCourseVideoSettingsView = function(activeTranscriptPreferencesData, transcriptionPlansData) {
+            renderCourseVideoSettingsView = function(activeTranscriptPreferencesData, transcriptionPlansData, transcriptOrganizationCredentialsData) {
+                // First destroy old referance to the view if present.
+                destroyCourseVideoSettingsView();
+
                 courseVideoSettingsView = new CourseVideoSettingsView({
                     activeTranscriptPreferences: activeTranscriptPreferencesData || null,
                     videoTranscriptSettings: {
                         transcript_preferences_handler_url: transcriptPreferencesUrl,
                         transcription_plans: transcriptionPlansData || null
-                    }
+                    },
+                    transcriptOrganizationCredentials: transcriptOrganizationCredentialsData || null
                 });
                 $courseVideoSettingsEl = courseVideoSettingsView.render().$el;
             };
@@ -90,6 +101,31 @@ define(
                 expect($preferanceContainerEl.hasClass('error')).toEqual(hasError);
                 expect($preferanceContainerEl.find('.error-icon').html()).toEqual($errorIconHtml);
                 expect($preferanceContainerEl.find('.error-info').html()).toEqual(requiredText);
+            };
+
+            changeProvider = function(selectedProvider) {
+                courseVideoSettingsView.providerSelected({
+                    target: {
+                        value: selectedProvider
+                    }
+                });
+            };
+
+            resetProvider = function() {
+                var requests = AjaxHelpers.requests(this);
+
+                // Set no provider selected
+                courseVideoSettingsView.selectedProvider = '';
+                $courseVideoSettingsEl.find('.action-update-course-video-settings').click();
+
+                AjaxHelpers.expectRequest(
+                    requests,
+                    'DELETE',
+                    transcriptPreferencesUrl
+                );
+
+                // Send successful empty content response.
+                AjaxHelpers.respondWithJson(requests, {});
             };
 
             beforeEach(function() {
@@ -128,11 +164,8 @@ define(
             });
 
             it('does not populate transcription plans if transcription plans are not provided', function() {
-                // First detroy old referance to the view.
-                destroyCourseVideoSettingsView();
-
                 // Create view with empty data.
-                renderCourseVideoSettingsView(null, null);
+                renderCourseVideoSettingsView();
 
                 expect($courseVideoSettingsEl.find('.course-video-transcript-preferances-wrapper').html()).toEqual('');
             });
@@ -179,6 +212,7 @@ define(
                         cielo24_turnaround: activeTranscriptPreferences.cielo24_turnaround,
                         three_play_turnaround: activeTranscriptPreferences.three_play_turnaround,
                         preferred_languages: activeTranscriptPreferences.preferred_languages,
+                        video_source_language: activeTranscriptPreferences.video_source_language,
                         global: false
                     })
                 );
@@ -198,21 +232,8 @@ define(
             });
 
             it('removes transcript settings on update settings button click when no provider is selected', function() {
-                var requests = AjaxHelpers.requests(this);
-
-                // Set no provider selected
-                courseVideoSettingsView.selectedProvider = null;
-                $courseVideoSettingsEl.find('.action-update-course-video-settings').click();
-
-                AjaxHelpers.expectRequest(
-                    requests,
-                    'DELETE',
-                    transcriptPreferencesUrl
-                );
-
-                // Send successful empty content response.
-                AjaxHelpers.respondWithJson(requests, {});
-
+                // Reset to N/A provider
+                resetProvider();
                 // Verify that success message is shown.
                 expect($courseVideoSettingsEl.find('.course-video-settings-message-wrapper.success').html()).toEqual(
                     '<div class="course-video-settings-message">' +
@@ -236,6 +257,7 @@ define(
                         cielo24_turnaround: activeTranscriptPreferences.cielo24_turnaround,
                         three_play_turnaround: activeTranscriptPreferences.three_play_turnaround,
                         preferred_languages: activeTranscriptPreferences.preferred_languages,
+                        video_source_language: activeTranscriptPreferences.video_source_language,
                         global: false
                     })
                 );
@@ -278,8 +300,74 @@ define(
                 verifyPreferanceErrorState($courseVideoSettingsEl.find('.transcript-languages-wrapper'), false);
             });
 
+            it('shows provider selected view if active provider is present', function() {
+                var $selectedProviderContainerEl = $courseVideoSettingsEl.find('.transcript-provider-wrapper .selected-transcript-provider');
+                expect($selectedProviderContainerEl.find('span').html()).toEqual(courseVideoSettingsView.selectedProvider);
+                expect($selectedProviderContainerEl.find('button.action-change-provider')).toExist();
+                // Verify provider list view is not shown.
+                expect($courseVideoSettingsEl.find('.transcript-provider-wrapper .transcript-provider-group')).not.toExist();
+            });
+
+            it('does not show transcript preferences or organization credentials if N/A provider is saved', function() {
+                var $transcriptProvidersListEl;
+
+                renderCourseVideoSettingsView(null, transcriptionPlans);
+
+                // Check N/A provider
+                changeProvider('');
+
+                $transcriptProvidersListEl = $courseVideoSettingsEl.find('.transcript-provider-wrapper .transcript-provider-group');
+                expect($transcriptProvidersListEl.find('input[type=radio]').length).toEqual(3);
+                // Verify selected provider view is not shown.
+                expect($courseVideoSettingsEl.find('.transcript-provider-wrapper .selected-transcript-provider')).not.toExist();
+            });
+
+            it('does not show transcript preferences or organization credentials if N/A provider is checked', function() {
+                var $transcriptProvidersListEl;
+
+                renderCourseVideoSettingsView(null, transcriptionPlans);
+
+                // Check N/A provider
+                changeProvider('');
+
+                $transcriptProvidersListEl = $courseVideoSettingsEl.find('.transcript-provider-wrapper .transcript-provider-group');
+                expect($transcriptProvidersListEl.find('input[type=radio]').length).toEqual(3);
+
+                // Verify selected provider view is not shown.
+                expect($courseVideoSettingsEl.find('.transcript-provider-wrapper .selected-transcript-provider')).not.toExist();
+                // Verify transcript preferences are not shown.
+                expect($courseVideoSettingsEl.find('.course-video-transcript-preferances-wrapper:visible')).not.toExist();
+                // Verify org credentials are not shown.
+                expect($courseVideoSettingsEl.find('.organization-credentials-wrapper:visible')).not.toExist();
+            });
+
+            it('shows organization credentials when organization credentials for selected provider are not present', function() {
+                renderCourseVideoSettingsView(null, transcriptionPlans);
+
+                // Check Cielo24 provider
+                changeProvider('Cielo24');
+
+                // Verify organization credentials are shown.
+                expect($courseVideoSettingsEl.find('.organization-credentials-wrapper:visible')).toExist();
+
+                // Verify transcript preferences are not shown.
+                expect($courseVideoSettingsEl.find('.course-video-transcript-preferances-wrapper:visible')).not.toExist();
+            });
+
+            it('shows transcript preferences when organization credentials for selected provider are present', function() {
+                renderCourseVideoSettingsView(null, transcriptionPlans, transcriptOrganizationCredentials);
+
+                // Check Cielo24 provider
+                changeProvider('Cielo24');
+
+                // Verify organization credentials are not shown.
+                expect($courseVideoSettingsEl.find('.organization-credentials-wrapper:visible')).not.toExist();
+
+                // Verify transcript preferences are shown.
+                expect($courseVideoSettingsEl.find('.course-video-transcript-preferances-wrapper:visible')).toExist();
+            });
             // TODO: Add more tests like clicking on add language, remove and their scenarios and some other tests
-            // like N/A selected, specific provider selected tests, specific preferance selected tests etc.
+            // for specific preferance selected tests etc.
         });
     }
 );
