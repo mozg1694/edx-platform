@@ -14,8 +14,7 @@ from .dev import *
 
 INSTALLED_APPS = [e for e in INSTALLED_APPS if e != 'debug_toolbar' and e != 'debug_toolbar_mongo']
 
-MIDDLEWARE_CLASSES = [e for e in MIDDLEWARE_CLASSES
-                           if e != 'debug_toolbar.middleware.DebugToolbarMiddleware']
+MIDDLEWARE_CLASSES = [e for e in MIDDLEWARE_CLASSES if e != 'debug_toolbar.middleware.DebugToolbarMiddleware']
 
 
 ########################### LETTUCE TESTING ##########################
