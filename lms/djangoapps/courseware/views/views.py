@@ -927,7 +927,7 @@ def _progress(request, course_key, student_id):
     # NOTE: To make sure impersonation by instructor works, use
     # student instead of request.user in the rest of the function.
 
-    course_grade = CourseGradeFactory().create(student, course)
+    course_grade = CourseGradeFactory().read(student, course)
     courseware_summary = course_grade.chapter_grades.values()
 
     studio_url = get_studio_url(course, 'settings/grading')
@@ -1015,7 +1015,7 @@ def _get_cert_data(student, course, enrollment_mode, course_grade=None):
 
     certificates_enabled_for_course = certs_api.cert_generation_enabled(course.id)
     if course_grade is None:
-        course_grade = CourseGradeFactory().create(student, course)
+        course_grade = CourseGradeFactory().read(student, course)
 
     if not auto_certs_api.can_show_certificate_message(course, student, course_grade, certificates_enabled_for_course):
         return
@@ -1290,7 +1290,7 @@ def is_course_passed(student, course, course_grade=None):
         returns bool value
     """
     if course_grade is None:
-        course_grade = CourseGradeFactory().create(student, course)
+        course_grade = CourseGradeFactory().read(student, course)
     return course_grade.passed
 
 

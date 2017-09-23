@@ -278,7 +278,7 @@ class TestSubmittingProblems(ModuleStoreTestCase, LoginEnrollmentTestCase, Probl
         """
         Return CourseGrade for current user and course.
         """
-        return CourseGradeFactory().create(self.student_user, self.course)
+        return CourseGradeFactory().read(self.student_user, self.course)
 
     def check_grade_percent(self, percent):
         """
